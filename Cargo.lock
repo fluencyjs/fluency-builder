@@ -16,13 +16,13 @@ name = "fluency"
 version = "0.1.0"
 dependencies = [
  "fy_parse",
- "project-root",
 ]
 
 [[package]]
 name = "fy_parse"
 version = "0.1.0"
 dependencies = [
+ "project-root",
  "regex",
 ]
 

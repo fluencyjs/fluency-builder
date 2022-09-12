@@ -1,4 +1,4 @@
-pub mod ast_template;
+pub mod template;
 
 #[derive(Debug)]
 pub struct Block<'a> {

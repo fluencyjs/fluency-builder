@@ -18,15 +18,15 @@ pub fn load(entry: &str, target: &str) {
     let template_block: Block = res_fy.template_block.as_str().into();
     template_block.to_html_ast();
 
-    let fy_obj = format!(r#"
-        new Fluency({{
-            webComponentName: 'f-{}',
-            template: `{}`,
-            style: `{}`,
-        }});
-        {}
-    "#, res_fy.fy_id, res_fy.template_block, res_fy.style_block, res_fy.script_block);
-    FyBlock::general_target(&format!("{}/{}", base_dir.to_str().unwrap(), target), fy_obj);
+    // let fy_obj = format!(r#"
+    //     new Fluency({{
+    //         webComponentName: 'f-{}',
+    //         template: `{}`,
+    //         style: `{}`,
+    //     }});
+    //     {}
+    // "#, res_fy.fy_id, res_fy.template_block, res_fy.style_block, res_fy.script_block);
+    // FyBlock::general_target(&format!("{}/{}", base_dir.to_str().unwrap(), target), fy_obj);
 }
 
 #[derive(Debug)]

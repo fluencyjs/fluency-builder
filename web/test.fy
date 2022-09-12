@@ -1,8 +1,8 @@
 <script>
-    const count = 1;
+    const msg = "Hello";
 </script>
 <template>
-    <p>count is: {{ count }}</p>
+    <div id="app" class="hh ww">msg is: {{ msg }} <span>world !</span></div>
 </template>
 <style>
     .my-class {

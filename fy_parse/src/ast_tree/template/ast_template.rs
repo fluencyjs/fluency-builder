@@ -9,7 +9,6 @@ pub struct HtmlAst {
     pub attrs: Option<HashMap<String, String>>,
     pub text: Option<String>,
     pub children: Vec<Rc<RefCell<HtmlAst>>>,
-    pub parent: Option<Rc<RefCell<HtmlAst>>>,
     pub node_type: AstType,
 }
 
@@ -20,7 +19,6 @@ impl HtmlAst {
             attrs: Some(tag.attributes),
             text: None,
             children: Vec::new(),
-            parent: None,
             node_type: AstType::Normal,
         }
     }
@@ -31,7 +29,6 @@ impl HtmlAst {
             attrs: None,
             text: Some(text),
             children: Vec::new(),
-            parent: None,
             node_type: AstType::Text,
         }
     }

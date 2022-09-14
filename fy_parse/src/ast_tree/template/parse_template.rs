@@ -47,13 +47,12 @@ impl Block<'_> {
                 Some(len) if len > 0 => {
                     let text = (&html_content[..len]).to_string().clone();
                     html_content = TextTag::eat(&html_content, len).to_string();
-                    TextTag::put_into_ast(text, &mut tag_stack);
+                    TextTag::handle_text(text, &mut tag_stack, &mut ast_root);
                 },
                 _ => {},
             }
         }
 
-        // println!("{:?}", RefCell::borrow_mut(&RefCell::borrow_mut(&ast_root.unwrap()).children[0]).parent);
         println!("{:?}", ast_root);
     }
 }
@@ -132,15 +131,14 @@ impl StartTag {
     fn put_into_ast(ast_root: &mut Option<Rc<RefCell<HtmlAst>>>, node_stack: &mut Vec<Rc<RefCell<HtmlAst>>>, current_ast: HtmlAst) {
         let mut current = Rc::new(RefCell::new(current_ast));
         if let None = ast_root {
-            *ast_root = Some(Rc::clone(&current));
+            *(ast_root.borrow_mut()) = Some(Rc::clone(&current));
         }
 
         // 获取栈中最后一个元素 将当前的元素挂载到该元素下
         if node_stack.len() > 0 {
-            let mut parent = &node_stack[node_stack.len() - 1];
+            let parent = &node_stack[node_stack.len() - 1];
 
             // 建立父子关系
-            RefCell::borrow_mut(&current).parent = Some(Rc::clone(parent));
             RefCell::borrow_mut(parent).children.push(Rc::clone(&current));
         }
 
@@ -180,14 +178,47 @@ struct TextTag {}
 impl HtmlHandle for TextTag {}
 
 impl TextTag {
-    fn put_into_ast(text: String, node_stack: &mut Vec<Rc<RefCell<HtmlAst>>>) {
-        let text_ast = HtmlAst::text_node(text);
-        let current = Rc::new(RefCell::new(text_ast));
+    fn handle_text(text: String, node_stack: &mut Vec<Rc<RefCell<HtmlAst>>>, ast_root: &mut Option<Rc<RefCell<HtmlAst>>>) {
+        let mut current_text = text;
+
+        loop {
+            if current_text.len() <= 0 {
+                break;
+            }
+
+            // 匹配文本中的占位符
+            let variable_re = Regex::new(DEFAULT_TAG_RE).unwrap();
+            match variable_re.captures(&current_text) {
+                Some(variable) => {
+                    let start = variable.get(0).unwrap().start();
+                    let len = variable.get(0).unwrap().end() - variable.get(0).unwrap().start();
+
+                    // 如果在占位符之前有静态数据需要先将静态数据生成节点
+                    if start > 0 {
+                        Self::put_into_ast(&mut current_text[0..start].to_string(), node_stack, ast_root);
+                        current_text = Self::eat(&current_text, start).to_string();
+                    }
+
+                    // 生成字面量节点 TODO 暂时用text_node替代
+                    Self::put_into_ast(&mut current_text[0..len].to_string(), node_stack, ast_root);
+                    current_text = Self::eat(&current_text, len).to_string();
+                },
+                None => {
+                    // 未匹配到占位符
+                    Self::put_into_ast(&mut current_text, node_stack, ast_root);
+                    current_text = Self::eat(&current_text, current_text.len()).to_string();
+                },
+            };
+        }
+    }
+
+    fn put_into_ast(current_text: &mut String, node_stack: &mut Vec<Rc<RefCell<HtmlAst>>>, ast_root: &mut Option<Rc<RefCell<HtmlAst>>>) {
+        let text_node = HtmlAst::text_node(current_text.clone());
+        let text_ref = Rc::new(RefCell::new(text_node));
 
         // 将节点放进ast树中
-        let mut parent = &node_stack[node_stack.len() - 1];
-        RefCell::borrow_mut(&current).parent = Some(Rc::clone(parent));
-        RefCell::borrow_mut(parent).children.push(current);
+        let parent = &node_stack[node_stack.len() - 1];
+        RefCell::borrow_mut(parent).children.push(text_ref);
     }
 }
 

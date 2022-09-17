@@ -16,7 +16,7 @@ static START_TAG_CLOSE: &str = r#"^\s*(/?)>"#;
 static DEFAULT_TAG_RE: &str = r#"\{\{((?:.|\r?\n)+?)\}\}"#;
 
 impl Block<'_> {
-    pub fn to_html_ast(&self) {
+    pub fn to_html_ast(&self) -> Option<Rc<RefCell<HtmlAst>>> {
         // 整个模板数据
         let mut html_content = self.content.trim().to_string().clone();
 
@@ -53,7 +53,7 @@ impl Block<'_> {
             }
         }
 
-        println!("{:?}", ast_root);
+        ast_root
     }
 }
 
@@ -195,26 +195,28 @@ impl TextTag {
 
                     // 如果在占位符之前有静态数据需要先将静态数据生成节点
                     if start > 0 {
-                        Self::put_into_ast(&mut current_text[0..start].to_string(), node_stack, ast_root);
+                        let text_node = HtmlAst::text_node(current_text[0..start].to_string());
+                        Self::put_into_ast(text_node, node_stack, ast_root);
                         current_text = Self::eat(&current_text, start).to_string();
                     }
 
-                    // 生成字面量节点 TODO 暂时用text_node替代
-                    Self::put_into_ast(&mut current_text[0..len].to_string(), node_stack, ast_root);
+                    // 生成字面量节点
+                    let variable_node = HtmlAst::variable_node(current_text[0..len].to_string());
+                    Self::put_into_ast(variable_node, node_stack, ast_root);
                     current_text = Self::eat(&current_text, len).to_string();
                 },
                 None => {
                     // 未匹配到占位符
-                    Self::put_into_ast(&mut current_text, node_stack, ast_root);
+                    let text_node = HtmlAst::text_node(current_text.clone());
+                    Self::put_into_ast(text_node, node_stack, ast_root);
                     current_text = Self::eat(&current_text, current_text.len()).to_string();
                 },
             };
         }
     }
 
-    fn put_into_ast(current_text: &mut String, node_stack: &mut Vec<Rc<RefCell<HtmlAst>>>, ast_root: &mut Option<Rc<RefCell<HtmlAst>>>) {
-        let text_node = HtmlAst::text_node(current_text.clone());
-        let text_ref = Rc::new(RefCell::new(text_node));
+    fn put_into_ast(current_node: HtmlAst, node_stack: &mut Vec<Rc<RefCell<HtmlAst>>>, ast_root: &mut Option<Rc<RefCell<HtmlAst>>>) {
+        let text_ref = Rc::new(RefCell::new(current_node));
 
         // 将节点放进ast树中
         let parent = &node_stack[node_stack.len() - 1];

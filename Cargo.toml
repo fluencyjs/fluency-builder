@@ -1,3 +1,3 @@
 [workspace]
 
-members = ["fluency", "fy_parse"]
+members = ["fluency", "fy_parse", "fy_generator"]

@@ -1,22 +1,31 @@
+use std::cell::RefCell;
 use std::fs;
 use regex::Regex;
 use std::path::Path;
+use std::rc::Rc;
 use project_root;
+use crate::ast_tree::template::ast_template::HtmlAst;
 use super::ast_tree::Block;
 
 /// 解析入口
-pub fn load(entry: &str, target: &str) {
+pub fn load(entry: &str, target: &str) -> (Option<Rc<RefCell<HtmlAst>>>, (), ()) {
     let base_dir = match project_root::get_project_root() {
         Ok(path) => path,
         _ => panic!("the root path is empty!"),
     };
 
     // 读取文件内容
-    let res_fy = FyBlock::read_file_to_block(&format!("{}/{}", base_dir.to_str().unwrap(), entry));
+    let res_fy: FyBlock = FyBlock::read_file_to_block(&format!("{}/{}", base_dir.to_str().unwrap(), entry));
 
-    // 解析文件内容
+    // 解析模板内容
     let template_block: Block = res_fy.template_block.as_str().into();
-    template_block.to_html_ast();
+    let html_ast = template_block.to_html_ast();
+
+    // 解析脚本内容
+    let script_block: Block = res_fy.script_block.as_str().into();
+    script_block.to_script_ast();
+
+    (html_ast, (), ())
 
     // let fy_obj = format!(r#"
     //     new Fluency({{

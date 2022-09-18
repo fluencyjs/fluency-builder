@@ -4,11 +4,12 @@ use regex::Regex;
 use std::path::Path;
 use std::rc::Rc;
 use project_root;
+use swc_ecma_ast::Module;
 use crate::ast_tree::template::ast_template::HtmlAst;
 use super::ast_tree::Block;
 
 /// 解析入口
-pub fn load(entry: &str, target: &str) -> (Option<Rc<RefCell<HtmlAst>>>, (), ()) {
+pub fn load(entry: &str, target: &str) -> (Option<Rc<RefCell<HtmlAst>>>, Module, ()) {
     let base_dir = match project_root::get_project_root() {
         Ok(path) => path,
         _ => panic!("the root path is empty!"),
@@ -23,9 +24,9 @@ pub fn load(entry: &str, target: &str) -> (Option<Rc<RefCell<HtmlAst>>>, (), ())
 
     // 解析脚本内容
     let script_block: Block = res_fy.script_block.as_str().into();
-    script_block.to_script_ast();
+    let script_ast = script_block.to_script_ast();
 
-    (html_ast, (), ())
+    (html_ast, script_ast, ())
 
     // let fy_obj = format!(r#"
     //     new Fluency({{

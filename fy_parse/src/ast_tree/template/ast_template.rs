@@ -32,10 +32,21 @@ impl HtmlAst {
             node_type: AstType::Text,
         }
     }
+
+    pub fn variable_node(variable_text: String) -> Self {
+        Self {
+            tag: None,
+            attrs: None,
+            text: Some(variable_text),
+            children: Vec::new(),
+            node_type: AstType::Variable,
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum AstType {
     Normal,
     Text,
+    Variable,
 }

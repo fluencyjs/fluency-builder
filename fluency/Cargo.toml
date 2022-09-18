@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 fy_parse = {path = "../fy_parse"}
+fy_generator = {path = "../fy_generator"}
 
 [[bin]]
 name = "fluency"

@@ -1,5 +1,9 @@
 <script>
-    const msg = "Hello";
+    let msg = "Hello";
+
+    setTimeout(() => {
+        msg = "Hello 1111";
+    }, 1000);
 </script>
 <template>
     <div id="app" class="hh ww">msg is: {{ msg }} hh {{ msg }}<span>world !</span></div>

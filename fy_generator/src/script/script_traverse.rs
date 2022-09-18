@@ -22,6 +22,20 @@ impl ScriptGen {
             }
         }
 
+        // 遍历ast上所有的节点
+        for line in &self.ast.body {
+            Self::walk(line, None, |node, parent| {}, |node, parent| {});
+        }
+
         println!("{:?}", responsive_variables);
+    }
+
+    pub fn walk(
+        node: &ModuleItem,
+        parent_node: Option<&ModuleItem>,
+        enter: fn(current_node: &ModuleItem, parent: Option<&ModuleItem>) -> (),
+        leave: fn(current_node: &ModuleItem, parent: Option<&ModuleItem>) -> (),
+    ) {
+
     }
 }

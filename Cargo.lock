@@ -293,6 +293,7 @@ name = "fy_generator"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "swc_common",
  "swc_ecma_ast",
 ]
 

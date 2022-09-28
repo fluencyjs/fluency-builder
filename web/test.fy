@@ -10,7 +10,7 @@
     }, 1000);
 
     function test() {
-        msg = "hahahah";
+        msg1 = "hahahah";
     }
 </script>
 <template>

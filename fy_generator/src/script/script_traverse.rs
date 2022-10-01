@@ -1,19 +1,24 @@
 use std::borrow::Borrow;
-use swc_ecma_ast::{Decl, Module, ModuleItem, Pat, Stmt, Expr, BlockStmtOrExpr, PatOrExpr};
+use swc::Compiler;
+use swc::config::SourceMapsConfig;
+use swc_common::{BytePos, Span, SyntaxContext};
+use swc_ecma_ast::{Decl, Module, ModuleItem, Pat, Stmt, Expr, BlockStmtOrExpr, PatOrExpr, ExprStmt, CallExpr, ExprOrSuper, Ident, ExprOrSpread, Lit, Number, EsVersion};
 use swc_common::util::take::Take;
+use fy_parse::ast_tree::script::parse_script::ScriptAst;
 
 pub struct ScriptGen {
-  pub ast: Module,
+  pub ast: Box<ScriptAst>,
 }
 
 impl ScriptGen {
   pub fn traverse_ast(&self) {
-    let s = serde_json::to_string_pretty(&self.ast).expect("failed to serialize");
+    let s = serde_json::to_string_pretty(&self.ast.module).expect("failed to serialize");
     // println!("{}", s);
+
 
     // 找到所有声明的外部变量
     let mut responsive_variables: Vec<String> = Vec::new();
-    for line in &self.ast.body {
+    for line in &self.ast.module.body {
       if let ModuleItem::Stmt(Stmt::Decl(Decl::Var(variable))) = line {
         for declare in &variable.decls {
           if let Pat::Ident(ind) = &declare.name {
@@ -25,10 +30,9 @@ impl ScriptGen {
     }
 
     // 遍历ast上所有的节点
-    for line in &self.ast.body {
+    for line in &self.ast.module.body {
       match line {
         ModuleItem::Stmt(node_content) => {
-          // TODO 考虑是否可以在闭包内直接使用responsive_variables
           Self::walk(node_content, None, &responsive_variables, |node, parent, responsive_var| {
             if let Stmt::Expr(expr) = node {
               if let Expr::Assign(assign) = &expr.expr.borrow() {
@@ -38,6 +42,8 @@ impl ScriptGen {
                       let assign_variable = &ident.id.sym;
                       if responsive_var.contains(&assign_variable.to_string()) {
                         println!("匹配到了！！！");
+                        let response_expression = Self::add_response(expr.span.hi.0 + 1);
+
                       }
                       // println!("出去了{:?}", serde_json::to_string_pretty(&ident).expect("failed to serialize"));
                     }
@@ -58,6 +64,63 @@ impl ScriptGen {
     }
 
     // println!("{:?}", responsive_variables);
+
+
+    println!("{}", self.gen_new_script());
+  }
+
+  fn add_response(start: u32) -> ModuleItem {
+    let response_func = String::from("$$response");
+
+    let response_ind = Expr::Call(CallExpr {
+      span: Span::new(BytePos(start), BytePos(start + response_func.len() as u32 - 2u32), SyntaxContext::empty()),
+      callee: ExprOrSuper::Expr(Box::new(Expr::Ident(Ident {
+        span: Span::new(BytePos(start), BytePos(start + response_func.len() as u32), SyntaxContext::empty()),
+        sym: response_func.clone().into(),
+        optional: false,
+      }))),
+      args: vec![
+        ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Lit(Lit::Num(Number {
+            span: Span::new(BytePos(start + response_func.len() as u32 + 1u32), BytePos(start + response_func.len() as u32 + 2u32), SyntaxContext::empty()),
+            value: 0.0,
+          }))),
+        },
+        ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Lit(Lit::Num(Number {
+            span: Span::new(BytePos(start + response_func.len() as u32 + 4u32), BytePos(start + response_func.len() as u32 + 5u32), SyntaxContext::empty()),
+            value: 1.0,
+          }))),
+        },
+      ],
+      type_args: None,
+    });
+
+    ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+      span: Span::new(BytePos(start), BytePos(start + response_func.len() as u32 + 3u32), SyntaxContext::empty()),
+      expr: Box::new(response_ind),
+    }))
+  }
+
+  fn gen_new_script(&self) -> String {
+    let compiler = Compiler::new(self.ast.cm.clone());
+    let mut new_module = self.ast.module.clone() as Module;
+    let new_source = compiler.print(
+      &new_module,
+      None,
+      None,
+      false,
+      EsVersion::Es2022,
+      SourceMapsConfig::Bool(false),
+      &Default::default(),
+      None,
+      false,
+      None,
+    ).unwrap();
+
+    new_source.code
   }
 
   pub fn walk(

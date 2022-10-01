@@ -4,12 +4,12 @@ use regex::Regex;
 use std::path::Path;
 use std::rc::Rc;
 use project_root;
-use swc_ecma_ast::Module;
+use crate::ast_tree::script::parse_script::ScriptAst;
 use crate::ast_tree::template::ast_template::HtmlAst;
 use super::ast_tree::Block;
 
 /// 解析入口
-pub fn load(entry: &str, target: &str) -> (Option<Rc<RefCell<HtmlAst>>>, Module, ()) {
+pub fn load(entry: &str, target: &str) -> (Option<Rc<RefCell<HtmlAst>>>, ScriptAst, ()) {
     let base_dir = match project_root::get_project_root() {
         Ok(path) => path,
         _ => panic!("the root path is empty!"),

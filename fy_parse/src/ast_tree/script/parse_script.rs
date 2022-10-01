@@ -11,7 +11,7 @@ use swc_ecma_parser::{Parser, Syntax, TsConfig};
 
 
 impl Block<'_> {
-    pub fn to_script_ast(&self) -> Module {
+    pub fn to_script_ast(&self) -> ScriptAst {
         let cm: Lrc<SourceMap> = Default::default();
         let fm = cm.new_source_file(
             FileName::Custom("test.ts".into()),
@@ -36,6 +36,21 @@ impl Block<'_> {
         );
 
         let mut parser = Parser::new_from(lexer);
-        parser.parse_module().unwrap()
+
+        ScriptAst::new(parser.parse_module().unwrap(), cm)
+    }
+}
+
+pub struct ScriptAst {
+    pub module: Module,
+    pub cm: Lrc<SourceMap>,
+}
+
+impl ScriptAst {
+    fn new(module: Module, cm: Lrc<SourceMap>) -> Self {
+        Self {
+            module,
+            cm,
+        }
     }
 }

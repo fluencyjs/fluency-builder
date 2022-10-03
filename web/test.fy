@@ -1,12 +1,10 @@
 <script>
     let msg = "Hello";
-    setTimeout(() => {
-        msg = "Hello 1111";
-    }, 1000);
-
 
     setTimeout(() => {
         msg = "Hello 1111";
+        let r = 0;
+        r = 1234;
     }, 1000);
 </script>
 <template>

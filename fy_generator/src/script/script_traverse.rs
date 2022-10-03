@@ -44,7 +44,7 @@ impl ScriptGen {
     for line in &mut self.ast.module.body {
       match line {
         ModuleItem::Stmt(node_content) => {
-          Self::walk(node_content, None, &responsive_variables, |node, parent, responsive_var| {
+          Self::walk(node_content, ParentStmt::empty(), &responsive_variables, |node, parent, responsive_var| {
             if let Stmt::Expr(expr) = &node {
               if let Expr::Assign(assign) = &expr.expr.borrow() {
                 match &assign.left {
@@ -53,10 +53,9 @@ impl ScriptGen {
                       let assign_variable = &ident.id.sym;
                       if responsive_var.contains(&assign_variable.to_string()) {
                         // 匹配到数据
-                        // let response_expression = Self::gen_response_expr(expr.span.hi.0 + 1);
                         let Response(response_expression) = Response::gen_response_expr("$$response");
-                        // node.take();
-                        parent.unwrap().push(response_expression);
+                        // parent.stmts.unwrap().push(response_expression);
+                        parent.stmts.unwrap().insert(parent.insert_index as usize, response_expression);
                       }
                     }
                   },
@@ -100,9 +99,9 @@ impl ScriptGen {
 
   pub fn walk(
     node: &mut Stmt,
-    parent_node: Option<&mut Vec<Stmt>>,
+    parent_node: ParentStmt,
     responsive_variables: &Vec<String>,
-    enter: fn(current_node: &mut Stmt, parent: Option<&mut Vec<Stmt>>, responsive_variables: &Vec<String>) -> (),
+    enter: fn(current_node: &mut Stmt, parent: ParentStmt, responsive_variables: &Vec<String>) -> (),
     leave: fn(current_node: &mut Stmt) -> (),
   ) {
     enter(node, parent_node, responsive_variables);
@@ -116,15 +115,19 @@ impl ScriptGen {
               match arg.expr.borrow_mut() {
                 Expr::Arrow(arrow_expr) => {
                   if let BlockStmtOrExpr::BlockStmt(body) = &mut arrow_expr.body {
-                    for stmt in &mut body.stmts.clone() {
-                      Self::walk(stmt, Some(&mut body.stmts), responsive_variables, enter, leave);
+                    let mut stmt_list = &mut body.stmts.clone();
+                    for i in 0..stmt_list.len() {
+                      let parent = ParentStmt::new(Some(&mut body.stmts), (i + 1) as i32);
+                      Self::walk(&mut stmt_list[i], parent, responsive_variables, enter, leave);
                     }
                   }
                 },
                 Expr::Fn(fn_expr) => {
                   if let Some(fn_body) = &mut fn_expr.function.body {
-                    for stmt in &mut fn_body.stmts.clone() {
-                      Self::walk(stmt, Some(&mut fn_body.stmts), responsive_variables, enter, leave);
+                    let mut stmt_list = &mut fn_body.stmts.clone();
+                    for i in 0..stmt_list.len() {
+                      let parent = ParentStmt::new(Some(&mut fn_body.stmts), (i + 1) as i32);
+                      Self::walk(&mut stmt_list[i], parent, responsive_variables, enter, leave);
                     }
                   }
                 },
@@ -140,8 +143,10 @@ impl ScriptGen {
           Decl::Fn(fn_expr) => {
             // 方法体中的数据需要继续遍历
             if let Some(fn_body) = &mut fn_expr.function.body {
-              for stmt in &mut fn_body.stmts.clone() {
-                Self::walk(stmt, Some(&mut fn_body.stmts), responsive_variables, enter, leave);
+              let mut stmt_list = &mut fn_body.stmts.clone();
+              for i in 0..stmt_list.len() {
+                let parent = ParentStmt::new(Some(&mut fn_body.stmts), (i + 1) as i32);
+                Self::walk(&mut stmt_list[i], parent, responsive_variables, enter, leave);
               }
             }
           },
@@ -157,6 +162,27 @@ impl ScriptGen {
   fn print_module(node: &ModuleItem) {
     let s = serde_json::to_string_pretty(&node).expect("failed to serialize");
     println!("{}", s);
+  }
+}
+
+pub struct ParentStmt<'a> {
+  stmts: Option<&'a mut Vec<Stmt>>,
+  insert_index: i32,
+}
+
+impl<'a> ParentStmt<'a> {
+  fn new(stmts: Option<&'a mut Vec<Stmt>>, insert_index: i32) -> Self {
+    Self {
+      stmts,
+      insert_index,
+    }
+  }
+
+  fn empty() -> Self {
+    Self {
+      stmts: None,
+      insert_index: 0,
+    }
   }
 }
 

@@ -192,18 +192,20 @@ impl TextTag {
                 Some(variable) => {
                     let start = variable.get(0).unwrap().start();
                     let len = variable.get(0).unwrap().end() - variable.get(0).unwrap().start();
+                    let real_start = variable.get(1).unwrap().start();
+                    let real_len = variable.get(1).unwrap().end() - variable.get(1).unwrap().start();
 
                     // 如果在占位符之前有静态数据需要先将静态数据生成节点
                     if start > 0 {
                         let text_node = HtmlAst::text_node(current_text[0..start].to_string());
                         Self::put_into_ast(text_node, node_stack, ast_root);
-                        current_text = Self::eat(&current_text, start).to_string();
+                        current_text = Self::eat(&current_text, real_start).to_string();
                     }
 
                     // 生成字面量节点
-                    let variable_node = HtmlAst::variable_node(current_text[0..len].to_string());
+                    let variable_node = HtmlAst::variable_node(current_text[0..real_len].to_string());
                     Self::put_into_ast(variable_node, node_stack, ast_root);
-                    current_text = Self::eat(&current_text, len).to_string();
+                    current_text = Self::eat(&current_text, len - (real_start - start)).to_string();
                 },
                 None => {
                     // 未匹配到占位符

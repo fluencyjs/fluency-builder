@@ -37,7 +37,7 @@ impl HtmlAst {
         Self {
             tag: None,
             attrs: None,
-            text: Some(variable_text),
+            text: Some(variable_text.trim().to_string()),
             children: Vec::new(),
             node_type: AstType::Variable,
         }

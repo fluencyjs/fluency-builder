@@ -8,6 +8,7 @@ use fy_parse::ast_tree::script::parse_script::ScriptAst;
 pub struct ScriptGen {
   pub ast: ScriptAst,
   pub target_code: String,
+  pub response_variables: Option<Vec<String>>,
 }
 
 impl ScriptGen {
@@ -16,6 +17,7 @@ impl ScriptGen {
     Self {
       ast,
       target_code: String::from(""),
+      response_variables: None,
     }
   }
 
@@ -35,6 +37,7 @@ impl ScriptGen {
         }
       }
     }
+    self.response_variables = Some(responsive_variables.clone());
 
     // 遍历ast上所有的节点
     for line in &mut self.ast.module.body {

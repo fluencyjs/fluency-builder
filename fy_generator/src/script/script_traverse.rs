@@ -1,12 +1,8 @@
-use std::any::Any;
 use std::borrow::{Borrow, BorrowMut};
-use std::hash::Hash;
 use swc::Compiler;
 use swc::config::SourceMapsConfig;
-use swc_common::{BytePos, Span, SyntaxContext, DUMMY_SP};
-use swc_common::collections::AHashSet;
+use swc_common::{DUMMY_SP};
 use swc_ecma_ast::{Decl, Module, ModuleItem, Pat, Stmt, Expr, BlockStmtOrExpr, PatOrExpr, ExprStmt, CallExpr, Ident, ExprOrSpread, Lit, Number, EsVersion, Callee};
-use swc_common::util::take::Take;
 use fy_parse::ast_tree::script::parse_script::ScriptAst;
 
 pub struct ScriptGen {
